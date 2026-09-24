@@ -28,6 +28,7 @@ function readTimeFor(article) {
 
 function renderHead({ title, description, canonicalPath, ogTitle, ogDescription, extraSchema }) {
   const canonical = `${config.domain}${canonicalPath}`;
+  const ogImage = `${config.domain}/assets/og-image.png`;
   return `<meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -37,6 +38,9 @@ function renderHead({ title, description, canonicalPath, ogTitle, ogDescription,
   <meta property="og:url" content="${canonical}" />
   <meta property="og:title" content="${escapeHtml(ogTitle)}" />
   <meta property="og:description" content="${escapeHtml(ogDescription)}" />
+  <meta property="og:image" content="${ogImage}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="${ogImage}" />
 
   <meta name="robots" content="index, follow" />
   <meta property="og:type" content="article" />
@@ -88,8 +92,7 @@ function renderBreadcrumb(items) {
 
 function renderFooter() {
   const cityLinks = config.cities.map(c => {
-    const href = c.file === '/' ? '/' : c.file.replace(/^\//, '');
-    return `<li><a href="${href}">${escapeHtml(c.name)}</a></li>`;
+    return `<li><a href="${c.file}">${escapeHtml(c.name)}</a></li>`;
   }).join('\n            ');
   return `  <footer class="site-footer">
     <div class="container">

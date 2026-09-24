@@ -11,6 +11,16 @@ const fs = require('fs');
 const path = require('path');
 const config = require('./site-config');
 const cities = require('./cities-data');
+const articles = require('./blog-data');
+
+// Evergreen posts relevant to every service area — linked from each city
+// page so link equity and users flow both directions between the city
+// pages and the blog (the blog already links back to every city).
+const RELATED_BLOG_SLUGS = [
+  'how-much-does-junk-removal-cost-louisville',
+  'what-junk-removal-companies-take',
+  'garage-cleanout-checklist'
+];
 
 const ROOT = path.join(__dirname, '..');
 const PHONE = config.phoneDisplay;
@@ -149,20 +159,34 @@ const STYLE = `  <style>
     .footer-links a:hover { color: #9CA3AF; }
     .footer-bottom { border-top: 1px solid rgba(255,255,255,.07); padding-top: 22px; text-align: center; font-size: .8rem; color: #444; }
     @media (max-width: 768px) { .hero { padding: 52px 0 44px; } .section { padding: 52px 0; } .hero-actions { flex-direction: column; } .hero-actions .btn { text-align: center; } .cta-actions { flex-direction: column; align-items: center; } }
+    .blog-links-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 40px; }
+    .blog-link-card { display: block; border: 1.5px solid #E5E7EB; border-radius: 12px; padding: 22px; background: #fff; text-align: left; transition: box-shadow .25s, transform .25s; }
+    .blog-link-card:hover { box-shadow: 0 10px 36px rgba(0,0,0,.09); transform: translateY(-4px); }
+    .blog-link-card .blog-link-cat { display: block; font-size: .76rem; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+    .blog-link-card h3 { font-size: 1rem; font-weight: 700; color: var(--dark); line-height: 1.4; }
   </style>`;
 
 function areaPills(currentSlug) {
   return config.cities.map(c => {
-    const href = c.file === '/' ? '/' : c.file.replace(/^\//, '');
     const cur = ('/' + currentSlug) === c.file ? ' current' : '';
-    return `        <a href="${href}" class="area-pill${cur}">${c.name}</a>`;
+    return `        <a href="${c.file}" class="area-pill${cur}">${c.name}</a>`;
   }).join('\n');
 }
 
 function footerCityLinks() {
   return config.cities.map(c => {
-    const href = c.file === '/' ? '/' : c.file.replace(/^\//, '');
-    return `            <li><a href="${href}">${c.name}</a></li>`;
+    return `            <li><a href="${c.file}">${c.name}</a></li>`;
+  }).join('\n');
+}
+
+function blogLinkCards() {
+  return RELATED_BLOG_SLUGS.map(slug => {
+    const a = articles.find(x => x.slug === slug);
+    if (!a) return '';
+    return `        <a href="/blog/${a.slug}" class="blog-link-card">
+          <span class="blog-link-cat">${a.category}</span>
+          <h3>${a.title}</h3>
+        </a>`;
   }).join('\n');
 }
 
@@ -247,9 +271,19 @@ function renderCity(city) {
     }))
   };
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${DOMAIN}/` },
+      { "@type": "ListItem", "position": 2, "name": `Junk Removal in ${cityState}`, "item": `${DOMAIN}/${city.slug}` }
+    ]
+  };
+
   const title = `Junk Removal in ${cityState} | ${config.businessName} | ${PHONE}`;
   const desc = `Full-service junk removal in ${cityState}. Furniture, appliances, garage &amp; estate cleanouts hauled away — we do the lifting. Same-day service, upfront flat-rate pricing. Free quote — call ${PHONE}.`;
   const canonical = `${DOMAIN}/${city.slug}`;
+  const ogImage = `${DOMAIN}/assets/og-image.png`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -263,6 +297,9 @@ function renderCity(city) {
   <meta property="og:url" content="${canonical}" />
   <meta property="og:title" content="Junk Removal in ${cityState} | ${config.businessName}" />
   <meta property="og:description" content="Full-service junk removal in ${cityState}. Same-day pickups, upfront pricing — call ${PHONE}." />
+  <meta property="og:image" content="${ogImage}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="${ogImage}" />
 
   <meta name="robots" content="index, follow" />
   <meta property="og:type" content="website" />
@@ -279,6 +316,10 @@ function renderCity(city) {
 
   <script type="application/ld+json">
   ${JSON.stringify(faqSchema, null, 2)}
+  </script>
+
+  <script type="application/ld+json">
+  ${JSON.stringify(breadcrumbSchema, null, 2)}
   </script>
 
 ${STYLE}
@@ -484,6 +525,16 @@ ${areaPills(city.slug)}
 
 ${faqBlocks(city.faqs)}
 
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:#fff;">
+    <div class="container text-center">
+      <h2 class="section-title">Helpful Guides for Your ${city.name} Cleanout</h2>
+      <p class="section-sub">Pricing breakdowns and cleanout tips from our blog</p>
+      <div class="blog-links-grid">
+${blogLinkCards()}
       </div>
     </div>
   </section>
